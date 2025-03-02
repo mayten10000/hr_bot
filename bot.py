@@ -24,8 +24,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 #     return [skill.strip() for skill in skills.split(",") if skill.strip()] ## внедрение нейросети в код
 
 API_TOKEN = '7854583744:AAGtrOwNm-PoIpSYY6g4BjtR53CwovflCdw'
-YOUR_ADMIN_ID = 5543459759
-
+YOUR_ADMIN_ID = {5543459759}
+ADMIN = 5543459759
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 storage = MemoryStorage()
@@ -34,6 +34,38 @@ logging.basicConfig(level=logging.INFO)
 
 # логирование и инициализация бота
 
+
+from aiogram import Bot
+from aiogram.types import BotCommand
+
+from aiogram import Bot
+from aiogram.types import BotCommand
+
+
+
+async def set_default_commands(bot: Bot, user_id: int):
+
+    user_commands = [
+        BotCommand(command="start", description="Запуск бота"),
+        BotCommand(command="jobs", description="Список вакансий"),
+        BotCommand(command="apply", description="Откликнуться на вакансию"),
+        BotCommand(command="help", description="Помощь")
+    ]
+
+    admin_commands = [
+        BotCommand(command="candidates", description="Список кандидатов"),
+        BotCommand(command="add_job", description="Добавить вакансию"),
+        BotCommand(command="delete_job", description="Удалить вакансию"),
+        BotCommand(command="edit_job", description="Изменить вакансию"),
+        BotCommand(command="match", description="Оценить кандидатов"),
+        BotCommand(command="settings", description="Настройки"),
+        BotCommand(command="stats", description="Статистика"),
+        BotCommand(command="refresh", description="Обновить данные"),
+        BotCommand(command="help", description="Помощь")
+    ]
+
+    commands = admin_commands if user_id not in YOUR_ADMIN_ID else user_commands
+    await bot.set_my_commands(commands, scope=None)
 def main_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -44,7 +76,11 @@ def main_keyboard():
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    if message.from_user.id == YOUR_ADMIN_ID:
+
+    user_id = message.from_user.id
+    await set_default_commands(bot, user_id)
+
+    if message.from_user.id == ADMIN:
     #    await message.answer("Добро пожаловать, админ!", reply_markup=admin_keyboard())
         await message.answer("Тыкай на кнопки или добавляй/удаляй вакансии", reply_markup=admin_keyboard())
 
@@ -53,6 +89,10 @@ async def start(message: types.Message):
 
 class JobForm(StatesGroup):
     waiting_for_job_title = State()
+    waiting_for_job_description = State()
+    waiting_for_job_salary = State()
+    waiting_for_job_requirements = State()
+
 
 def init_db():
     conn = sqlite3.connect("jobs.db")
@@ -70,6 +110,7 @@ def init_db():
     conn.commit()
     conn.close()
 init_db()
+
 
 
 def admin_keyboard():
@@ -116,13 +157,15 @@ async def confirm_delete_job(callback: CallbackQuery):
 def job_keyboard():
     conn = sqlite3.connect("jobs.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM jobs")
+    cursor.execute("SELECT id, title FROM jobs")
     jobs = cursor.fetchall()
     conn.close()
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=job[1], callback_data=f"select_{job[0]}")] for job in jobs
     ])
     return keyboard
+
 
 def skills_keyboard(remaining_skills):
     buttons = []
@@ -171,6 +214,42 @@ async def add_job(callback: CallbackQuery, state: FSMContext):
     await state.set_state(JobForm.waiting_for_job_title)  # Устанавливаем состояние
     await callback.answer()
 
+@dp.message(JobForm.waiting_for_job_title)
+async def save_job_title(message: types.Message, state: FSMContext):
+    await state.update_data(title=message.text)
+    await message.answer("Введите описание вакансии: ")
+    await state.set_state(JobForm.waiting_for_job_description)
+
+@dp.message(JobForm.waiting_for_job_description)
+async def save_job_description(message: types.Message, state: FSMContext):
+    await state.update_data(description=message.text)
+    await message.answer("Введите зарплату (например, 100 000 руб.):")
+    await state.set_state(JobForm.waiting_for_job_salary)
+
+@dp.message(JobForm.waiting_for_job_salary)
+async def save_job_salary(message: types.Message, state: FSMContext):
+    await state.update_data(salary=message.text)
+    await message.answer("Введите требования (например, Python, SQL, Django):")
+    await state.set_state(JobForm.waiting_for_job_requirements)
+
+@dp.message(JobForm.waiting_for_job_requirements)
+async def save_job_requrements(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO jobs (title, description, salary, requirements) VALUES (?, ?, ?, ?)",
+                       (data["title"], data["description"], data["salary"], message.text))
+        conn.commit()
+        await message.answer("Вакансия добавлена!", reply_markup=admin_keyboard())
+    except sqlite3.IntegrityError:
+        await message.answer("Такая вакансия уже существует.")
+    finally:
+        conn.close()
+    await state.clear()
+
+
 @dp.message(JobForm.waiting_for_job_title)  # Ждем ввод названия вакансии
 async def save_job(message: types.Message, state: FSMContext):
     conn = sqlite3.connect("jobs.db")
@@ -184,6 +263,28 @@ async def save_job(message: types.Message, state: FSMContext):
     finally:
         conn.close()
     await state.clear()  # Очищаем состояние
+
+@dp.callback_query(F.data.startswith("select_"))
+async def show_job_details(callback: CallbackQuery):
+    job_id = int(callback.data.split("_")[1])
+
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT title, description, salary, requirements FROM jobs WHERE id=?", (job_id,))
+    job = cursor.fetchone()
+    conn.close()
+
+    if job:
+        title, description, salary, requirements = job
+        text = f"📌 *{title}*\n\n📝 *Описание:* {description}\n💰 *Зарплата:* {salary}\n📋 *Требования:* {requirements}"
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Откликнуться", callback_data=f"apply_{job_id}")]
+        ]))
+    else:
+        await callback.message.edit_text("Вакансия не найдена.")
+
+    await callback.answer()
+
 
 
 @dp.callback_query()
