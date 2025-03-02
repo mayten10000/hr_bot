@@ -9,6 +9,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 #OPENAI_API_KEY = "your_openai_api_key"
 # def extract_skills_from_job(job_title):
@@ -32,10 +33,21 @@ storage = MemoryStorage()
 logging.basicConfig(level=logging.INFO)
 
 # логирование и инициализация бота
+
+def main_keyboard():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="/candidates")]
+        ],
+        resize_keyboard=True
+    )
+
 @dp.message(Command("start"))
 async def start(message: types.Message):
     if message.from_user.id == YOUR_ADMIN_ID:
-        await message.answer("Добро пожаловать, админ!", reply_markup=admin_keyboard())
+    #    await message.answer("Добро пожаловать, админ!", reply_markup=admin_keyboard())
+        await message.answer("Тыкай на кнопки или добавляй/удаляй вакансии", reply_markup=admin_keyboard())
+
     else:
         await message.answer("Выберите вакансию", reply_markup=job_keyboard())
 
