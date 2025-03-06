@@ -10,6 +10,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import BotCommandScopeChat
 
 #OPENAI_API_KEY = "your_openai_api_key"
 # def extract_skills_from_job(job_title):
@@ -38,10 +39,6 @@ logging.basicConfig(level=logging.INFO)
 from aiogram import Bot
 from aiogram.types import BotCommand
 
-from aiogram import Bot
-from aiogram.types import BotCommand
-
-
 
 async def set_default_commands(bot: Bot, user_id: int):
 
@@ -61,11 +58,17 @@ async def set_default_commands(bot: Bot, user_id: int):
         BotCommand(command="settings", description="Настройки"),
         BotCommand(command="stats", description="Статистика"),
         BotCommand(command="refresh", description="Обновить данные"),
-        BotCommand(command="help", description="Помощь")
+        BotCommand(command="help", description="Помощь"),
+        BotCommand(command="edit_stack", description="Редактировать стек технологий")
     ]
 
-    commands = admin_commands if user_id not in YOUR_ADMIN_ID else user_commands
-    await bot.set_my_commands(commands, scope=None)
+
+    if user_id == ADMIN:
+        commands = admin_commands
+    else:
+        commands = user_commands
+#    commands = admin_commands if user_id == ADMIN else user_commands
+    await bot.set_my_commands(commands, scope=BotCommandScopeChat(chat_id=user_id))
 def main_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -73,7 +76,8 @@ def main_keyboard():
         ],
         resize_keyboard=True
     )
-
+class UpdateStackForm(StatesGroup):
+    waiting_for_stack = State()
 @dp.message(Command("start"))
 async def start(message: types.Message):
 
@@ -120,7 +124,70 @@ def admin_keyboard():
     ])
     return keyboard
 
+@dp.callback_query(F.data == "edit_technologies")
+async def edit_technologies(callback: CallbackQuery):
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title FROM jobs")
+    jobs = cursor.fetchall()
+    conn.close()
 
+    if not jobs:
+        await callback.message.answer("Нет вакансий для редактирования.")
+        return
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=job[1], callback_data=f"edit_stack_{job[0]}")] for job in jobs
+    ])
+    await callback.message.answer("Выберите вакансию для редактирования стека:", reply_markup=keyboard)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("edit_stack_"))
+async def edit_stack_for_job(callback: CallbackQuery):
+    job_id = int(callback.data.split("_")[2])
+
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT title, requirements FROM jobs WHERE id = ?", (job_id,))
+    job = cursor.fetchone()
+    conn.close()
+
+    if job:
+        title, requirements = job
+        text = f"📌 *{title}*\n\n📝 *Текущий стек технологий:* {requirements if requirements else 'Не указан'}"
+        await callback.message.edit_text(text, parse_mode="Markdown",
+                                         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                                             [InlineKeyboardButton(text="Изменить стек", callback_data=f"update_stack_{job_id}")]
+                                         ]))
+    else:
+        await callback.message.edit_text("Вакансия не найдена.")
+
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("update_stack_"))
+async def update_stack(callback: CallbackQuery, state: FSMContext):
+    job_id = int(callback.data.split("_")[2])
+
+    await state.update_data(job_id=job_id)
+    await callback.message.answer("Введите новый стек технологий для вакансии (например, Python, Django, SQL):")
+    await state.set_state(UpdateStackForm.waiting_for_stack)
+    await callback.answer()
+
+@dp.message(UpdateStackForm.waiting_for_stack)
+async def update_stack_in_db(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    job_id = data.get("job_id")
+
+    new_stack = message.text.strip()
+
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    cursor.execute("UPDATE jobs SET requirements=? WHERE id=?", (new_stack, job_id))
+    conn.commit()
+    conn.close()
+
+    await message.answer("Стек технологий обновлен!")
+    await state.clear()
 @dp.callback_query(F.data == "delete_job")
 async def delete_job(callback: CallbackQuery):
     conn = sqlite3.connect("jobs.db")
@@ -167,19 +234,6 @@ def job_keyboard():
     return keyboard
 
 
-def skills_keyboard(remaining_skills):
-    buttons = []
-
-    for skill in remaining_skills:
-        buttons.append([
-            InlineKeyboardButton(text=f"{skill} +", callback_data=f"skill_{skill}_yes"),
-            InlineKeyboardButton(text=f"{skill} -", callback_data=f"skill_{skill}_no")
-        ])
-
-    if not remaining_skills:
-        buttons.append([InlineKeyboardButton(text="Готово", callback_data="submit_skills")])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 @dp.message(Command("jobs"))
 async def list_jobs(message: types.Message):
@@ -187,7 +241,7 @@ async def list_jobs(message: types.Message):
 
 @dp.message(Command("candidates"))
 async def show_candidates(message: types.Message):
-    if message.from_user.id != YOUR_ADMIN_ID:
+    if message.from_user.id not in YOUR_ADMIN_ID:
         await message.answer("У вас нет доступа.")
         return
 
@@ -286,56 +340,104 @@ async def show_job_details(callback: CallbackQuery):
     await callback.answer()
 
 
+@dp.callback_query(F.data.startswith("apply_"))
+async def apply_for_job(callback: CallbackQuery, state: FSMContext):
+    job_id = int(callback.data.split("_")[1])
 
-@dp.callback_query()
-async def handle_callback(callback: CallbackQuery, state: FSMContext):
-    if callback.data.startswith("select_"):
-        job_id = int(callback.data.split("_")[1])
-        await state.update_data(job_id=job_id, skills={})
+    # Получаем стек технологий вакансии
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT title, requirements FROM jobs WHERE id=?", (job_id,))
+    job = cursor.fetchone()
+    conn.close()
 
-        # Передаем все доступные навыки
-        available_skills = ["Python", "Django", "SQL", "Git"]
-        await callback.message.edit_text("Отметьте свои навыки:", reply_markup=skills_keyboard(available_skills))
-        await callback.answer()
+    if not job:
+        await callback.message.answer("Вакансия не найдена.")
+        return
 
-    elif callback.data.startswith("skill_"):
-        _, skill, response = callback.data.split("_")
-        user_data = await state.get_data()
+    title, requirements = job
+    skills_list = requirements.split(", ") if requirements else []  # Парсим стек
+
+    if not skills_list:
+        await callback.message.answer("Для этой вакансии нет требований.")
+        return
+
+    await state.update_data(job_id=job_id, skills={}, remaining_skills=skills_list)
+    await callback.message.answer(f"Вы откликаетесь на вакансию *{title}*.\n\n"
+                                  "Отметьте свои навыки:", parse_mode="Markdown",
+                                  reply_markup=skills_keyboard(skills_list))
+    await callback.answer()
+
+
+def skills_keyboard(remaining_skills):
+    buttons = []
+    for skill in remaining_skills:
+        buttons.append([
+            InlineKeyboardButton(text=f"{skill} +", callback_data=f"skill_{skill}_yes"),
+            InlineKeyboardButton(text=f"{skill} -", callback_data=f"skill_{skill}_no")
+        ])
+
+    if not remaining_skills:
+        buttons.append([InlineKeyboardButton(text="Готово", callback_data="submit_skills")])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+@dp.callback_query(F.data.startswith("skill_"))
+async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
+    data = callback.data
+    user_data = await state.get_data()
+
+    if data.startswith("skill_"):
+        _, skill, response = data.split("_")
         skills = user_data.get("skills", {})
+        remaining_skills = user_data.get("remaining_skills", [])
 
-        skills[skill] = 1 if response == "yes" else 0  # Записываем выбранный навык
-        await state.update_data(skills=skills)
+        # Удаляем навык из списка оставшихся
+        if skill in remaining_skills:
+            remaining_skills.remove(skill)
 
-        # Фильтруем оставшиеся навыки
-        all_skills = ["Python", "Django", "SQL", "Git"]
-        remaining_skills = [s for s in all_skills if s not in skills]
+        skills[skill] = 1 if response == "yes" else 0
 
-        if remaining_skills:  # Если остались навыки - обновляем клавиатуру
+        await state.update_data(skills=skills, remaining_skills=remaining_skills)
+
+        if remaining_skills:
             await callback.message.edit_text("Отметьте свои навыки:", reply_markup=skills_keyboard(remaining_skills))
-        else:  # Если навыков не осталось, показываем кнопку "Готово"
-            await callback.message.edit_text("Все навыки отмечены. Нажмите 'Готово'.", reply_markup=skills_keyboard([]))
+        else:
+            await callback.message.edit_text("Все навыки отмечены. Нажмите 'Готово'.",
+                                             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                                                 [InlineKeyboardButton(text="Готово", callback_data="submit_skills")]
+                                             ]))
 
-        await callback.answer()
+    elif data == "submit_skills":
+        if "job_id" not in user_data or "skills" not in user_data:
+            await callback.message.answer("Произошла ошибка. Попробуйте снова.")
+            return
 
-    elif callback.data == "submit_skills":
-        user_data = await state.get_data()
-        skills_text = ", ".join(
-            [f"{skill}: {'+' if val == 1 else '-'}" for skill, val in user_data.get("skills", {}).items()])
-        match_score = sum(user_data.get("skills", {}).values())
+        skills_text = ", ".join([f"{skill}: {'+' if val == 1 else '-'}" for skill, val in user_data["skills"].items()])
+        match_score = sum(user_data["skills"].values())
 
         conn = sqlite3.connect("jobs.db")
         cursor = conn.cursor()
         cursor.execute("INSERT INTO candidates (name, job_id, skills, match_score) VALUES (?, ?, ?, ?)",
-                       (callback.from_user.full_name, user_data.get("job_id"), skills_text, match_score))
+                       (callback.from_user.full_name, user_data["job_id"], skills_text, match_score))
         conn.commit()
         conn.close()
 
-        await callback.message.edit_text("Спасибо! Мы свяжемся с вами.")  # Убираем кнопки полностью
+        await callback.message.edit_text("Спасибо! Мы свяжемся с вами.")
         await state.clear()
-        await callback.answer()
+
+    await callback.answer()
+
+
+def register_handlers(dp: Dispatcher):
+    dp.callback_query.register(handle_callback, F.data.startswith("skill_"))
+    dp.callback_query.register(handle_callback, F.data == "submit_skills")
+
 
 async def main():
+    register_handlers(dp)
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
