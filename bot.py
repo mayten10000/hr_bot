@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import sqlite3
-import openai
-from aiogram import Bot, Dispatcher, types
+#import openai
+from aiogram import Dispatcher, types
 from aiogram import F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -11,6 +11,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.types import BotCommandScopeChat
+from aiogram import Bot
+from aiogram.types import BotCommand
 
 #OPENAI_API_KEY = "your_openai_api_key"
 # def extract_skills_from_job(job_title):
@@ -35,11 +37,6 @@ logging.basicConfig(level=logging.INFO)
 
 # логирование и инициализация бота
 
-
-from aiogram import Bot
-from aiogram.types import BotCommand
-
-
 async def set_default_commands(bot: Bot, user_id: int):
 
     user_commands = [
@@ -50,6 +47,7 @@ async def set_default_commands(bot: Bot, user_id: int):
     ]
 
     admin_commands = [
+        BotCommand(command="delete_candidate_", description="Удалить кандидата"),
         BotCommand(command="candidates", description="Список кандидатов"),
         BotCommand(command="add_job", description="Добавить вакансию"),
         BotCommand(command="delete_job", description="Удалить вакансию"),
@@ -62,13 +60,13 @@ async def set_default_commands(bot: Bot, user_id: int):
         BotCommand(command="edit_stack", description="Редактировать стек технологий")
     ]
 
-
     if user_id == ADMIN:
         commands = admin_commands
     else:
         commands = user_commands
-#    commands = admin_commands if user_id == ADMIN else user_commands
+#   commands = admin_commands if user_id == ADMIN else user_commands
     await bot.set_my_commands(commands, scope=BotCommandScopeChat(chat_id=user_id))
+
 def main_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -76,8 +74,10 @@ def main_keyboard():
         ],
         resize_keyboard=True
     )
+
 class UpdateStackForm(StatesGroup):
     waiting_for_stack = State()
+
 @dp.message(Command("start"))
 async def start(message: types.Message):
 
@@ -97,7 +97,6 @@ class JobForm(StatesGroup):
     waiting_for_job_salary = State()
     waiting_for_job_requirements = State()
 
-
 def init_db():
     conn = sqlite3.connect("jobs.db")
     cursor = conn.cursor()
@@ -114,8 +113,6 @@ def init_db():
     conn.commit()
     conn.close()
 init_db()
-
-
 
 def admin_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -188,6 +185,7 @@ async def update_stack_in_db(message: types.Message, state: FSMContext):
 
     await message.answer("Стек технологий обновлен!")
     await state.clear()
+
 @dp.callback_query(F.data == "delete_job")
 async def delete_job(callback: CallbackQuery):
     conn = sqlite3.connect("jobs.db")
@@ -206,7 +204,6 @@ async def delete_job(callback: CallbackQuery):
 
     await callback.message.answer("Выберите вакансию для удаления:", reply_markup=keyboard)
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("del_"))
 async def confirm_delete_job(callback: CallbackQuery):
@@ -233,8 +230,6 @@ def job_keyboard():
     ])
     return keyboard
 
-
-
 @dp.message(Command("jobs"))
 async def list_jobs(message: types.Message):
     await message.answer("Выберите вакансию", reply_markup=job_keyboard())
@@ -260,7 +255,6 @@ async def show_candidates(message: types.Message):
         text += f"👤 {name}\n💼 Вакансия ID: {job_id}\n🛠 Навыки: {skills}\n✅ Баллы: {score}\n\n"
 
     await message.answer(text)
-
 
 @dp.callback_query(F.data == "add_job")
 async def add_job(callback: CallbackQuery, state: FSMContext):
@@ -303,8 +297,49 @@ async def save_job_requrements(message: types.Message, state: FSMContext):
         conn.close()
     await state.clear()
 
+@dp.callback_query(F.data.startswith("delete_candidate_"))
+async def delete_candidate(callback: CallbackQuery):
+    candidate_id = int(callback.data.split("_")[-1])
 
-@dp.message(JobForm.waiting_for_job_title)  # Ждем ввод названия вакансии
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM candidates WHERE id = ?", (candidate_id,))
+    conn.commit()
+    conn.close()
+
+    await callback.message.edit_text("Кандидат удалён.")
+    await callback.answer("Удалено!")
+
+@dp.message(Command("delete_candidate"))
+async def list_candidates_for_deletion(message: types.Message):
+    if message.from_user.id not in YOUR_ADMIN_ID:
+        await message.answer("У вас нет доступа.")
+        return
+
+    keyboard = get_candidates_keyboard()
+
+    if keyboard.inline_keyboard:
+        await message.answer("Выберите кандидата для удаления:", reply_markup=keyboard)
+    else:
+        await message.answer("Кандидатов пока нет.")
+
+def get_candidates_keyboard():
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM candidates")
+    candidates = cursor.fetchall()
+    conn.close()
+
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    for candidate in candidates:
+        keyboard.add(
+            InlineKeyboardButton(text=f"❌ {candidate[1]}", callback_data=f"delete_candidate_{candidate[0]}")
+        )
+
+    return keyboard
+
+@dp.message(JobForm.waiting_for_job_title)
 async def save_job(message: types.Message, state: FSMContext):
     conn = sqlite3.connect("jobs.db")
     cursor = conn.cursor()
@@ -316,7 +351,7 @@ async def save_job(message: types.Message, state: FSMContext):
         await message.answer("Такая вакансия уже существует.")
     finally:
         conn.close()
-    await state.clear()  # Очищаем состояние
+    await state.clear()
 
 @dp.callback_query(F.data.startswith("select_"))
 async def show_job_details(callback: CallbackQuery):
@@ -338,7 +373,6 @@ async def show_job_details(callback: CallbackQuery):
         await callback.message.edit_text("Вакансия не найдена.")
 
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("apply_"))
 async def apply_for_job(callback: CallbackQuery, state: FSMContext):
@@ -367,7 +401,6 @@ async def apply_for_job(callback: CallbackQuery, state: FSMContext):
                                   "Отметьте свои навыки:", parse_mode="Markdown",
                                   reply_markup=skills_keyboard(skills_list))
     await callback.answer()
-
 
 def skills_keyboard(remaining_skills):
     buttons = []
@@ -428,16 +461,13 @@ async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
 
     await callback.answer()
 
-
 def register_handlers(dp: Dispatcher):
     dp.callback_query.register(handle_callback, F.data.startswith("skill_"))
     dp.callback_query.register(handle_callback, F.data == "submit_skills")
 
-
 async def main():
     register_handlers(dp)
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
