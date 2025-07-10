@@ -14,9 +14,12 @@ async def list_jobs(message: types.Message):
     await message.answer("Выберите вакансию", reply_markup=job_keyboard(jobs))
 
 
+@router.callback_query(F.data == "add_job")
+async def add_job(callback: CallbackQuery):
+    
 
 @router.callback_query(F.data == "delete_job")
-async def delete_job_callback(callback: CallbackQuery):
+async def delete_job(callback: CallbackQuery):
     jobs = get_all_jobs()
     # ...
 @router.message(Command("jobs"))
