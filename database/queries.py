@@ -23,6 +23,15 @@ def add_candidate(name, job_id, skills_text, score):
                    (name, job_id, skills_text, score))
     conn.commit()
     conn.close()
+    
+def add_job(job_title, job_description, job_requirements, job_optionals, job_salary):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO jobs (title, description, requirements, optionals, salary) VALUES (?, ?, ?, ?, ?)",
+                   (job_title, job_description, job_requirements, job_optionals, job_salary))
+    
+    conn.commit()
+    conn.close()
 
 def delete_job(job_id):
     conn = get_connection()
