@@ -32,12 +32,10 @@ class Config:
     
 def load_config() -> Config:
     env = Env()
-    
-    env.read_env(path)
-    
+    env.read_env()
     token = env("BOT_TOKEN")
-        
     raw_ids = env.list("ADMIN_IDS", default=[])
+    admin_ids = [int(ID) for ID in raw_ids]
     
     db = DatabaseSettings(
         name=env("POSTGRES_DB"),

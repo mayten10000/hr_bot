@@ -18,7 +18,7 @@ async def list_jobs(message: types.Message):
 @router.callback_query(F.data == "delete_job")
 async def delete_job_callback(callback: CallbackQuery):
     jobs = get_all_jobs()
-    ...
+    # ...
 @router.message(Command("jobs"))
 async def test_jobs(message: types.Message):
     await message.answer("Тест: сработала команда /jobs")

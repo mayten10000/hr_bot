@@ -1,5 +1,7 @@
 from aiogram.types import BotCommand, BotCommandScopeChat
-from config import ADMIN_ID
+from config import Config, load_config
+
+config: Config = load_config()
 
 async def set_default_commands(bot, user_id: int):
     user_commands = [
@@ -15,5 +17,5 @@ async def set_default_commands(bot, user_id: int):
         BotCommand(command="delete_candidate_", description="Удалить кандидата")
     ]
 
-    commands = admin_commands if user_id == ADMIN_ID else user_commands
+    commands = admin_commands if user_id in config.bot.admin_ids else user_commands
     await bot.set_my_commands(commands, scope=BotCommandScopeChat(chat_id=user_id))
