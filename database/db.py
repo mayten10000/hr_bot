@@ -9,7 +9,6 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Таблица вакансий
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,19 +16,18 @@ def init_db():
         )
     ''')
 
-    # Таблица кандидатов
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS candidates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             job_id INTEGER,
+            phone TEXT,  
             skills TEXT,
             match_score INTEGER,
             FOREIGN KEY (job_id) REFERENCES jobs (id)
         )
     ''')
 
-    # Добавляем поля, если их нет
     for column in ["description", "salary", "requirements"]:
         try:
             cursor.execute(f"ALTER TABLE jobs ADD COLUMN {column} TEXT")

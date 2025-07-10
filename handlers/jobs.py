@@ -11,17 +11,25 @@ router = Router()
 @router.message(Command("jobs"))
 async def list_jobs(message: types.Message):
     jobs = get_all_jobs()
-    await message.answer("Выберите вакансию", reply_markup=job_keyboard(jobs))
-
+    if jobs:
+        await message.answer("Выберите вакансию:", reply_markup=job_keyboard(jobs))
+    else:
+        await message.answer("Нет доступных вакансий")
 
 @router.callback_query(F.data == "add_job")
-async def add_job(callback: CallbackQuery):
-    
+async def start_adding_job(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer("Введите название вакансии:")
+    await state.set_state(JobForm.title)
+    await callback.answer()
 
 @router.callback_query(F.data == "delete_job")
-async def delete_job(callback: CallbackQuery):
+async def start_deleting_job(callback: CallbackQuery, state: FSMContext):
     jobs = get_all_jobs()
-    # ...
-@router.message(Command("jobs"))
-async def test_jobs(message: types.Message):
-    await message.answer("Тест: сработала команда /jobs")
+    if jobs:
+        await callback.message.answer(
+            "Выберите вакансию для удаления:",
+            reply_markup=job_keyboard(jobs, prefix="delete_")
+        )
+    else:
+        await callback.answer("Нет вакансий для удаления", show_alert=True)
+    await callback.answer()
