@@ -8,33 +8,23 @@ def admin_keyboard():
     ])
 
 def job_keyboard(jobs):
-    if not jobs:
-        return None
-
-    buttons = [
-        [InlineKeyboardButton(text=title, callback_data=f"apply_{id}")]
-        for id, title in jobs
-    ]
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=job[1], callback_data=f"select_{job[0]}")] for job in jobs
+    ])
+ 
 def delete_job_keyboard(jobs):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=job[1], callback_data=f"delete_{job[0]}")] for job in jobs    
     ])
 
-
 def skills_keyboard(remaining_skills):
-    """Создает клавиатуру с кнопками для выбора навыков"""
     buttons = []
     for skill in remaining_skills:
-        # Добавляем кнопки "+" и "-" для каждого навыка
         buttons.append([
-            InlineKeyboardButton(text=f"{skill} ✅", callback_data=f"skill_{skill}_yes"),
-            InlineKeyboardButton(text=f"{skill} ❌", callback_data=f"skill_{skill}_no")
+            InlineKeyboardButton(text=f"{skill} +", callback_data=f"skill_{skill}_yes"),
+            InlineKeyboardButton(text=f"{skill} -", callback_data=f"skill_{skill}_no")
         ])
-    # Добавляем кнопку "Готово" только если есть навыки
-    if remaining_skills:
+    if not remaining_skills:
         buttons.append([InlineKeyboardButton(text="Готово", callback_data="submit_skills")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

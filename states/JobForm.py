@@ -4,8 +4,17 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
 from aiogram.types import CallbackQuery
-
+from config import Config, load_config
 from database.queries import add_job 
+
+import logging
+
+config: Config = load_config()
+
+logging.basicConfig(
+    level=logging.getLevelName(level=config.log.level),
+    format=config.log.format
+)
 
 class JobForm(StatesGroup):
     waiting_for_job_title = State()
@@ -66,7 +75,17 @@ async def process_add_job_optionals(message: Message, state: FSMContext):
     
     data = await state.get_data()
     
-    await add_job(**data)
+    #add_job(*data)
+
+    add_job(
+        job_title=data['job_title'],
+        job_description=data['job_description'],
+        job_requirements=data['job_requirements'],
+        job_optionals=data['job_optionals'],
+        job_salary=data['job_salary']
+    )
+    
+    logging.info(f"Job added ({data})")
     
     
     
