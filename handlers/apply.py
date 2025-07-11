@@ -49,12 +49,16 @@ async def process_skill_selection(callback: CallbackQuery, state: FSMContext):
     try:
         _, skill, choice = callback.data.split("_")
         user_data = await state.get_data()
+        score = user_data.get("score", 0)
         skills = user_data.get("skills", {})
         skills[skill] = (choice == "yes")
-
         await state.update_data(skills=skills)
 
         await callback.answer(f"Навык {skill} {'добавлен' if choice == 'yes' else 'отмечен как отсутствующий'}")
+        if choice == 'yes':
+            score += 1
+            await state.update_data(score=score)
+        await callback.answer(f"Совпадений по навыкам {score}")
     except Exception as e:
         await callback.answer("Ошибка при сохранении навыка", show_alert=True)
         print(f"Error in process_skill_selection: {e}")
@@ -115,7 +119,8 @@ async def process_confirmation(message: Message, state: FSMContext):
             name=data['name'],
             job_id=data['job_id'],
             phone=data['phone'],
-            skills=data['skills']
+            skills=data['skills'],
+            match_score=data['score']
         )
 
         await message.answer("✅ Ваша заявка принята! Спасибо за участие.")

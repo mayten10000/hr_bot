@@ -18,12 +18,6 @@ def job_keyboard(jobs):
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-def delete_job_keyboard(jobs):
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=job[1], callback_data=f"delete_{job[0]}")] for job in jobs    
-    ])
-
-
 def skills_keyboard(remaining_skills):
     """Создает клавиатуру с кнопками для выбора навыков"""
     buttons = []
