@@ -20,3 +20,4 @@ async def start_cmd(message: types.Message):
     else:
         jobs = get_all_jobs()
         await message.answer("Выберите вакансию:", reply_markup=job_keyboard(jobs))
+

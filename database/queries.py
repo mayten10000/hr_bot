@@ -11,11 +11,18 @@ def get_all_jobs():
 def get_job_details(job_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT title, description, salary, requirements FROM jobs WHERE id=?", (job_id,))
+    cursor.execute("SELECT category, title, description, salary, requirements FROM jobs WHERE id=?", (job_id,))
     job = cursor.fetchone()
     conn.close()
     return job
 
+def get_category_jobs(job_category):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title FROM jobs WHERE category=?", (job_category,))
+    jobs = cursor.fetchall()
+    conn.close()
+    return jobs
 
 def add_candidate(name, job_id, phone, skills, match_score):
     conn = get_connection()
@@ -37,6 +44,22 @@ def add_candidate(name, job_id, phone, skills, match_score):
         print(f"Ошибка при добавлении кандидата: {e}")
         conn.rollback()
         return False
+    finally:
+        conn.close()
+
+def add_job(job_category, job_title, job_description, job_requirements, job_optionals, job_salary):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO jobs (category, title, description, requirements, optionals, salary)
+                    VALUES (?, ?, ?, ?, ?, ?)
+            ''', (job_category, job_title, job_description, job_requirements, job_optionals, job_salary))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"error_add_job: {e}")
+        conn.rollback()
     finally:
         conn.close()
 

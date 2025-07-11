@@ -1,7 +1,7 @@
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
-from database.queries import get_all_jobs, delete_job
+from database.queries import get_all_jobs, delete_job, get_category_jobs
 from keyboards.inline import job_keyboard, admin_keyboard, delete_job_keyboard
 from aiogram.filters import Command
 from states.JobForm import process_add_job_form
@@ -19,12 +19,12 @@ router = Router()
 
 @router.message(Command("jobs"))
 async def list_jobs(message: types.Message):
-    jobs = get_all_jobs()
-    await message.answer("Выберите вакансию", reply_markup=job_keyboard(jobs))
+    jobs = get_category_jobs()
+    await message.answer("category_choice", reply_markup=job_keyboard(jobs))
 
 @router.callback_query(F.data == "add_job")
-async def delete_job_handler(callback: types.CallbackQuery, state: FSMContext):
-    await process_add_job_form(callback.message, state)
+async def add_job_callback(callback: types.CallbackQuery, state: FSMContext):
+    await process_add_job_form(callback, state)
     await callback.answer()  
     
 @router.callback_query(F.data == "delete_job")
