@@ -16,3 +16,5 @@ async def show_candidates(message: types.Message):
 
     candidates = get_all_candidates()
     # ...
+
+

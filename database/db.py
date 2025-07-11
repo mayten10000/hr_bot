@@ -12,7 +12,11 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT UNIQUE
+            title TEXT UNIQUE,
+            description TEXT,
+            requirements TEXT,
+            optionals TEXT,
+            salary TEXT
         )
     ''')
 
@@ -36,3 +40,6 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+get_connection()
+init_db()
