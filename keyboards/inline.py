@@ -33,3 +33,8 @@ def get_candidates_keyboard(candidates):
         [InlineKeyboardButton(text=f"❌ {c[1]}", callback_data=f"delete_candidate_{c[0]}")] for c in candidates
     ])
 
+def get_categories_keyboard(categories=[]):
+    categories = ['IT', 'Medicine', 'Finance', 'ART']
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=category, callback_data=f"category_{category}")] for category in categories
+    ])

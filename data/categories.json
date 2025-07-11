@@ -1,0 +1,28 @@
+{
+  "IT": {
+    "display_name": "💻 IT",
+    "subcategories": {
+      "backend": {
+        "display_name": "Backend-разработка",
+        "subcategories": {
+          "python": {"display_name": "Python"},
+          "java": {"display_name": "Java"}
+        }
+      },
+      "frontend": {
+        "display_name": "Frontend",
+        "subcategories": {
+          "react": {"display_name": "React"},
+          "vue": {"display_name": "Vue.js"}
+        }
+      }
+    }
+  },
+  "MEDICINE": {
+    "display_name": "🏥 Медицина",
+    "subcategories": {
+      "doctors": {"display_name": "Врачи"},
+      "nurses": {"display_name": "Медсёстры"}
+    }
+  }
+}

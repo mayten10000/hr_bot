@@ -12,7 +12,8 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT UNIQUE,
+            category TEXT,
+            title TEXT,
             description TEXT,
             requirements TEXT,
             optionals TEXT,
