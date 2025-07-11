@@ -17,7 +17,7 @@ def get_job_details(job_id):
     return job
 
 
-def add_candidate(name, job_id, phone, skills):
+def add_candidate(name, job_id, phone, skills, match_score):
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -29,7 +29,7 @@ def add_candidate(name, job_id, phone, skills):
         cursor.execute('''
             INSERT INTO candidates (name, job_id, phone, skills, match_score)
             VALUES (?, ?, ?, ?, ?)
-        ''', (name, job_id, phone, skills_str, 0))
+        ''', (name, job_id, phone, skills_str, match_score))
 
         conn.commit()  # Важно: подтверждаем изменения
         return True
