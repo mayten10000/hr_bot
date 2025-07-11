@@ -22,7 +22,7 @@ async def list_jobs(message: types.Message):
     jobs = get_all_jobs()
     await message.answer("Выберите вакансию", reply_markup=job_keyboard(jobs))
 
-@router.callback_query(F.data == "add_job")  
+@router.callback_query(F.data == "add_job")
 async def delete_job_handler(callback: types.CallbackQuery, state: FSMContext):
     await process_add_job_form(callback.message, state)
     await callback.answer()  
@@ -36,7 +36,7 @@ async def delete_job_callback(callback: CallbackQuery):
     
 @router.callback_query(F.data.startswith("delete_"))
 async def process_delete_job(callback: CallbackQuery):
-    logging.info(f"process_delete_job is started (data={callback})")
+    logging.info(f"process_delete_job is started (job_data={callback})")
     job_id = callback.data.split("_")[-1]
     delete_job(job_id)
     logging.info(f"Job (id={job_id} deleted")
@@ -51,3 +51,4 @@ async def process_delete_job(callback: CallbackQuery):
 @router.message(Command("jobs"))
 async def test_jobs(message: types.Message):
     await message.answer("Тест: сработала команда /jobs")
+

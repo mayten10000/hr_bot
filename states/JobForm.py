@@ -23,7 +23,7 @@ class JobForm(StatesGroup):
     waiting_for_job_optionals = State()
     waiting_for_job_salary = State()
     
-states_job_form_router = Router()
+router = Router()
 
 @states_job_form_router.message(Command(commands='cancel'), StateFilter(default_state))
 async def process_cancel_command_in_ds(message: Message):
@@ -74,7 +74,6 @@ async def process_add_job_optionals(message: Message, state: FSMContext):
     await state.update_data(job_salary=message.text)
     
     data = await state.get_data()
-    
     #add_job(*data)
 
     add_job(

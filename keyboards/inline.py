@@ -32,3 +32,4 @@ def get_candidates_keyboard(candidates):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"❌ {c[1]}", callback_data=f"delete_candidate_{c[0]}")] for c in candidates
     ])
+
