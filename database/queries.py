@@ -90,3 +90,51 @@ def get_job_skills(job_id):
         return []
     finally:
         conn.close()
+
+def get_user_role(telegram_id: int) -> str | None:
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT role FROM users WHERE telegram_id = ?", (telegram_id,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+
+
+def set_user_role(telegram_id: int, role: str, username: str = None, full_name: str = None):
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT INTO users (telegram_id, username, full_name, role)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(telegram_id) DO UPDATE SET
+                role = excluded.role,
+                username = COALESCE(excluded.username, users.username),
+                full_name = COALESCE(excluded.full_name, users.full_name)
+        """, (telegram_id, username, full_name, role))
+        conn.commit()
+
+
+def get_user_by_id(telegram_id: int) -> dict | None:
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, telegram_id, username, full_name, role, created_at
+            FROM users
+            WHERE telegram_id = ?
+        """, (telegram_id,))
+        row = cursor.fetchone()
+
+        if row:
+            return {
+                "id": row[0],
+                "telegram_id": row[1],
+                "username": row[2],
+                "full_name": row[3],
+                "role": row[4],
+                "created_at": row[5],
+            }
+        return None
+
+def user_exists(telegram_id: int) -> bool:
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM users WHERE telegram_id = ?", (telegram_id,))
+        return cursor.fetchone() is not None
