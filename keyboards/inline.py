@@ -11,7 +11,7 @@ def admin_keyboard():
 def job_keyboard(jobs):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=job[1], callback_data=f"select_{job[0]}")] for job in jobs
-    ])
+    ] + [[InlineKeyboardButton(text='back_button', callback_data='categories')]])
  
 def delete_job_keyboard(jobs):
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -44,5 +44,11 @@ def get_checking_job_form_keyboard():
     buttons = [
         InlineKeyboardButton(text="yes", callback_data="is_correct_job_form"),
         InlineKeyboardButton(text="no", callback_data="is_not_correct_job_form")
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+
+def get_job_details_keyboard(category):
+    buttons = [
+        InlineKeyboardButton(text="back_button", callback_data=f'category_{category}')
     ]
     return InlineKeyboardMarkup(inline_keyboard=[buttons])

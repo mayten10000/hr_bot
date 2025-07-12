@@ -4,7 +4,7 @@ from handlers.apply import router as router_apply
 from handlers.candidates import router as router_candidates
 from handlers.jobs import router as router_jobs
 from handlers.start import router as router_start
-from states.JobForm import router as router_job_form
+from handlers.job_form import router as router_job_form
 
 main_router = Router()
 

@@ -8,7 +8,9 @@ async def set_default_commands(bot, user_id: int):
         BotCommand(command="start", description="Запуск бота"),
         BotCommand(command="jobs", description="Список вакансий"),
         BotCommand(command="apply", description="Откликнуться на вакансию"),
-        BotCommand(command="help", description="Помощь")
+        BotCommand(command="help", description="Помощь"),
+        BotCommand(command="find_job", description="Найти работу")
+
     ]
 
     admin_commands = [

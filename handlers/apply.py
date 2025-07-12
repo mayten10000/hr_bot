@@ -3,9 +3,17 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from database.queries import get_job_details, add_candidate, get_job_skills
 from keyboards.inline import skills_keyboard
-from states.forms import ApplicationState
+from aiogram.fsm.state import StatesGroup, State
 
 router = Router()
+
+class ApplicationState(StatesGroup):
+    # Состояния для подачи заявки
+    job_selection = State()      # Выбор вакансии
+    skills_selection = State()   # Выбор навыков
+    name = State()              # Ввод имени (добавлено недостающее состояние)
+    phone = State()             # Ввод телефона
+    confirmation = State()      # Подтверждение
 
 @router.callback_query(F.data.startswith("apply_"))
 async def apply_for_job(callback: CallbackQuery, state: FSMContext):

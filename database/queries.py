@@ -11,7 +11,7 @@ def get_all_jobs():
 def get_job_details(job_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT category, title, description, salary, requirements FROM jobs WHERE id=?", (job_id,))
+    cursor.execute("SELECT category, title, description, salary, requirements, optionals FROM jobs WHERE id=?", (job_id,))
     job = cursor.fetchone()
     conn.close()
     return job
