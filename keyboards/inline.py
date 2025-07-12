@@ -7,6 +7,7 @@ def admin_keyboard():
         [InlineKeyboardButton(text="Удалить вакансию", callback_data="delete_job")]
     ])
 
+
 def job_keyboard(jobs):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=job[1], callback_data=f"select_{job[0]}")] for job in jobs

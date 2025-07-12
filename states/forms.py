@@ -15,3 +15,6 @@ class ApplicationState(StatesGroup):
     name = State()              # Ввод имени (добавлено недостающее состояние)
     phone = State()             # Ввод телефона
     confirmation = State()      # Подтверждение
+
+class RoleForm(StatesGroup):
+    choose_role = State()
