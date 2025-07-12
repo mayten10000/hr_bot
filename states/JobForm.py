@@ -7,7 +7,7 @@ from database.queries import add_job
 
 import logging
 from aiogram.types import Message, CallbackQuery
-from keyboards.inline import get_categories_keyboard
+from keyboards.inline import get_categories_keyboard, get_checking_job_form_keyboard
 from filters.filters import IsAdmin
 
 config: Config = load_config()
@@ -36,7 +36,7 @@ async def process_cancel_command_out_ds(message: Message, state: FSMContext):
     await message.answer('yes_cancel')
     await state.clear()
 
-@router.callback_query(StateFilter(default_state), F.data == "add_job", IsAdmin())
+@router.callback_query(StateFilter(default_state), F.data.in_({"add_job", "is_not_correct_job_form"}), IsAdmin())
 async def process_add_job_form(callback: CallbackQuery, state: FSMContext):
     await callback.answer('job_form_settings')
 
@@ -86,6 +86,14 @@ async def process_add_job_optionals(message: Message, state: FSMContext):
     data = await state.get_data()
     #add_job(*data)
 
+    fields = 'Job Form\n' + '\n'.join([f"{k}: {v}" for k, v in data.items()])
+    await message.answer(fields)
+    await message.answer("checking_job_form", reply_markup=get_checking_job_form_keyboard())
+
+@router.callback_query(F.data == 'is_correct_job_form')
+async def process_finish_add_job_form(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+
     add_job(
         job_category=data['job_category'],
         job_title=data['job_title'],
@@ -96,8 +104,13 @@ async def process_add_job_optionals(message: Message, state: FSMContext):
     )
     
     logging.info(f"Job added ({data})")
+    await callback.answer("job_added")
 
     await state.clear()
     
-    
-    
+@router.callback_query(F.data == 'is_not_correct_job_form')
+async def process_wrong_job_form(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('new_try_job_form')
+
+    await state.clear()
+    await process_add_job_form(callback, state)

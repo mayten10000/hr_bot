@@ -38,3 +38,10 @@ def get_categories_keyboard(categories=[]):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=category, callback_data=f"category_{category}")] for category in categories
     ])
+
+def get_checking_job_form_keyboard():
+    buttons = [
+        InlineKeyboardButton(text="yes", callback_data="is_correct_job_form"),
+        InlineKeyboardButton(text="no", callback_data="is_not_correct_job_form")
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=[buttons])
