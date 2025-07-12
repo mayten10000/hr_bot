@@ -2,11 +2,12 @@ from aiogram import Router, types, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from database.queries import get_all_jobs, delete_job, get_category_jobs
-from keyboards.inline import job_keyboard, admin_keyboard, delete_job_keyboard
+from keyboards.inline import job_keyboard, admin_keyboard, delete_job_keyboard, get_categories_keyboard
 from aiogram.filters import Command
 from states.JobForm import process_add_job_form
 from config import Config, load_config
 import logging
+from filters.filters import IsAdmin
 
 config: Config = load_config()
 
@@ -22,10 +23,12 @@ async def list_jobs(message: types.Message):
     jobs = get_category_jobs()
     await message.answer("category_choice", reply_markup=job_keyboard(jobs))
 
+'''
 @router.callback_query(F.data == "add_job")
 async def add_job_callback(callback: types.CallbackQuery, state: FSMContext):
     await process_add_job_form(callback, state)
     await callback.answer()  
+'''
     
 @router.callback_query(F.data == "delete_job")
 async def delete_job_callback(callback: CallbackQuery):
@@ -51,4 +54,12 @@ async def process_delete_job(callback: CallbackQuery):
 @router.message(Command("jobs"))
 async def test_jobs(message: types.Message):
     await message.answer("Тест: сработала команда /jobs")
+
+@router.callback_query(F.data.startswith("category_"), ~IsAdmin())
+async def print_category_jobs(callback: CallbackQuery):
+    job_category = callback.data.split("_")[-1]
+    logging.info(f"print_category_jobs method is started (job_category={job_category})")
+    jobs = get_category_jobs(job_category)
+    logging.info(f"category_jobs: {jobs}")
+    await callback.message.edit_text("jobs_choice", reply_markup=job_keyboard(jobs))
 

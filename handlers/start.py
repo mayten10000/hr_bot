@@ -1,8 +1,8 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from database.queries import get_all_jobs
+from database.queries import get_all_jobs, get_category_jobs
 
-from keyboards.inline import admin_keyboard, job_keyboard
+from keyboards.inline import admin_keyboard, job_keyboard, get_categories_keyboard
 from utils.commands import set_default_commands
 
 from config import Config, load_config
@@ -18,6 +18,5 @@ async def start_cmd(message: types.Message):
     if message.from_user.id in config.bot.admin_ids:
         await message.answer("Тыкай на кнопки или добавляй/удаляй вакансии", reply_markup=admin_keyboard())
     else:
-        jobs = get_all_jobs()
-        await message.answer("Выберите вакансию:", reply_markup=job_keyboard(jobs))
+        await message.answer("category_choice:", reply_markup=get_categories_keyboard())
 

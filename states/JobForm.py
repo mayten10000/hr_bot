@@ -8,6 +8,7 @@ from database.queries import add_job
 import logging
 from aiogram.types import Message, CallbackQuery
 from keyboards.inline import get_categories_keyboard
+from filters.filters import IsAdmin
 
 config: Config = load_config()
 
@@ -26,7 +27,7 @@ class JobForm(StatesGroup):
     
 router = Router()
 
-@router.message(Command(commands='cancel'), StateFilter(default_state))
+@router.message(Command(commands='cancel'), StateFilter(default_state), IsAdmin())
 async def process_cancel_command_in_ds(message: Message):
     await message.answer('no_cancel')
 
@@ -35,7 +36,7 @@ async def process_cancel_command_out_ds(message: Message, state: FSMContext):
     await message.answer('yes_cancel')
     await state.clear()
 
-@router.callback_query(StateFilter(default_state))
+@router.callback_query(StateFilter(default_state), F.data == "add_job", IsAdmin())
 async def process_add_job_form(callback: CallbackQuery, state: FSMContext):
     await callback.answer('job_form_settings')
 
@@ -44,34 +45,34 @@ async def process_add_job_form(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(StateFilter(JobForm.waiting_for_job_category))
 async def process_add_job_category(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(job_category=callback.data)
+    await state.update_data(job_category=callback.data.split('_')[-1])
 
     await callback.answer()
     await callback.message.answer('title: ')
     await state.set_state(JobForm.waiting_for_job_title)
     
-@router.message(StateFilter(JobForm.waiting_for_job_title), F.text.func(lambda text:  10 <= len(text) <= 50))
+@router.message(StateFilter(JobForm.waiting_for_job_title))#, F.text.func(lambda text:  10 <= len(text) <= 50))
 async def process_add_job_tittle(message: Message, state: FSMContext):
     await state.update_data(job_title=message.text)
     
     await message.answer('description: ')
     await state.set_state(JobForm.waiting_for_job_description)
     
-@router.message(StateFilter(JobForm.waiting_for_job_description), F.text.func(lambda text:  100 <= len(text) <= 500))
+@router.message(StateFilter(JobForm.waiting_for_job_description))#, F.text.func(lambda text:  100 <= len(text) <= 500))
 async def process_add_job_description(message: Message, state: FSMContext):
     await state.update_data(job_description=message.text)
     
     await message.answer('requirements: ')
     await state.set_state(JobForm.waiting_for_job_requirements)
     
-@router.message(StateFilter(JobForm.waiting_for_job_requirements), F.text.func(lambda text:  150 <= len(text) <= 300))
+@router.message(StateFilter(JobForm.waiting_for_job_requirements))#, F.text.func(lambda text:  150 <= len(text) <= 300))
 async def process_add_job_requirements(message: Message, state: FSMContext):
     await state.update_data(job_requirements=message.text)
     
     await message.answer('optionals: ')
     await state.set_state(JobForm.waiting_for_job_optionals)
     
-@router.message(StateFilter(JobForm.waiting_for_job_optionals), F.text.func(lambda text:  150 <= len(text) <= 300))
+@router.message(StateFilter(JobForm.waiting_for_job_optionals))#, F.text.func(lambda text:  150 <= len(text) <= 300))
 async def process_add_job_optionals(message: Message, state: FSMContext):
     await state.update_data(job_optionals=message.text)
     
@@ -95,6 +96,8 @@ async def process_add_job_optionals(message: Message, state: FSMContext):
     )
     
     logging.info(f"Job added ({data})")
+
+    await state.clear()
     
     
     
