@@ -25,8 +25,7 @@ def skills_keyboard(remaining_skills):
             InlineKeyboardButton(text=f"{skill} +", callback_data=f"skill_{skill}_yes"),
             InlineKeyboardButton(text=f"{skill} -", callback_data=f"skill_{skill}_no")
         ])
-    if not remaining_skills:
-        buttons.append([InlineKeyboardButton(text="Готово", callback_data="submit_skills")])
+    buttons.append([InlineKeyboardButton(text="Готово", callback_data="submit_skills")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_candidates_keyboard(candidates):
@@ -47,8 +46,24 @@ def get_checking_job_form_keyboard():
     ]
     return InlineKeyboardMarkup(inline_keyboard=[buttons])
 
-def get_job_details_keyboard(category):
-    buttons = [
-        InlineKeyboardButton(text="back_button", callback_data=f'category_{category}')
-    ]
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+def get_job_details_keyboard(job_id:int,category:str,is_candidate:bool=False) -> InlineKeyboardMarkup:
+    keyboardd = []
+    if is_candidate:
+        keyboardd.append(
+            [
+                InlineKeyboardButton(
+                    text="Откликнуться",
+                    callback_data=f"apply_{job_id}"
+                )
+            ]
+        )
+
+    keyboardd.append([
+        InlineKeyboardButton(
+            text="Back",
+            callback_data=f"category_{category}"
+        )
+    ])
+
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboardd)

@@ -1,8 +1,7 @@
 from mailbox import Message
-
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery
-from database.queries import get_all_jobs, delete_job, get_category_jobs, get_job_details
+from database.queries import get_all_jobs, delete_job, get_category_jobs, get_job_details, get_user_by_id
 from keyboards.inline import job_keyboard, delete_job_keyboard, get_categories_keyboard, get_job_details_keyboard
 from aiogram.filters import Command
 from config import Config, load_config
@@ -62,6 +61,7 @@ async def print_category_jobs(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("select_"))
 async def print_job(callback: CallbackQuery):
     job_id = callback.data.split('_')[-1]
+    category, title, description, requirements, optionals, salary = get_job_details(job_id)
     details = get_job_details(job_id)
     logging.info(f"selected job ({details})")
     text = (
@@ -71,7 +71,14 @@ async def print_job(callback: CallbackQuery):
         f"optionals: {details[4]}\n"
         f"salary: {details[5]}"
     )
-    await callback.message.edit_text(text, reply_markup=get_job_details_keyboard(details[0]))
+    user = get_user_by_id(callback.from_user.id)
+    is_candidate = user and user.get('role') == 'candidate'
+    keyboard = get_job_details_keyboard(
+        job_id=job_id,
+        category=category,
+        is_candidate=is_candidate
+    )
+    await callback.message.edit_text(text, reply_markup=keyboard)
     await callback.answer()
 
 @router.message(Command("find_job"))
@@ -81,3 +88,5 @@ async def print_category_list(obj: CallbackQuery | Message):
         await obj.message.edit_text("category_choice", reply_markup=get_categories_keyboard())
     else:
         await obj.answer("category_choice", reply_markup=get_categories_keyboard())
+
+

@@ -46,7 +46,7 @@ def init_db():
         )
     ''')
 
-    for column in ["description", "salary", "requirements"]:
+    for column in ["category", "title", "description", "requirements", "optionals", "salary"]:
         try:
             cursor.execute(f"ALTER TABLE jobs ADD COLUMN {column} TEXT")
         except sqlite3.OperationalError:
