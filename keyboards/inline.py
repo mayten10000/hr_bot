@@ -1,4 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from marshmallow.fields import Boolean
+
 from database.queries import get_all_jobs
 
 def admin_keyboard():
@@ -12,7 +14,14 @@ def job_keyboard(jobs):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=job[1], callback_data=f"select_{job[0]}")] for job in jobs
     ] + [[InlineKeyboardButton(text='back_button', callback_data='categories')]])
- 
+
+
+def job_keyboard_by_id(jobs, ids):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=job[1], callback_data=f"select_{ID}")] for job, ID in zip(jobs, ids)
+    ] + [[InlineKeyboardButton(text='back_button', callback_data='categories')]])
+
+
 def delete_job_keyboard(jobs):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"❌ {job[1]}", callback_data=f"delete_{job[0]}")] for job in jobs    
@@ -33,11 +42,16 @@ def get_candidates_keyboard(candidates):
         [InlineKeyboardButton(text=f"❌ {c[1]}", callback_data=f"delete_candidate_{c[0]}")] for c in candidates
     ])
 
-def get_categories_keyboard(categories=[]):
-    categories = ['IT', 'Medicine', 'Finance', 'ART']
-    return InlineKeyboardMarkup(inline_keyboard=[
+def get_categories_keyboard(hr_mod: Boolean, categories=[]):
+    categories = ['IT', 'Медицина', 'Финансы']
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=category, callback_data=f"category_{category}")] for category in categories
     ])
+    if not hr_mod:
+        keyboard.inline_keyboard.append([
+            InlineKeyboardButton(text='key_word_search', callback_data='call_bm25')
+        ])
+    return keyboard
 
 def get_checking_job_form_keyboard():
     buttons = [
@@ -60,7 +74,7 @@ def get_job_details_keyboard(job_id:int,category:str,is_candidate:bool=False) ->
 
     keyboardd.append([
         InlineKeyboardButton(
-            text="Back",
+            text="back_button",
             callback_data=f"category_{category}"
         )
     ])

@@ -85,8 +85,8 @@ async def print_job(callback: CallbackQuery):
 @router.callback_query(F.data == 'categories')
 async def print_category_list(obj: CallbackQuery | Message):
     if isinstance(obj, CallbackQuery):
-        await obj.message.edit_text("category_choice", reply_markup=get_categories_keyboard())
+        await obj.message.edit_text("category_choice", reply_markup=get_categories_keyboard(hr_mod=False))
     else:
-        await obj.answer("category_choice", reply_markup=get_categories_keyboard())
+        await obj.answer("category_choice", reply_markup=get_categories_keyboard(hr_mod=False))
 
 

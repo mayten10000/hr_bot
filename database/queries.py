@@ -8,6 +8,14 @@ def get_all_jobs():
     conn.close()
     return jobs
 
+def get_all_full_jobs():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, category, title, description, requirements, optionals, salary FROM jobs")
+    jobs = cursor.fetchall()
+    conn.close()
+    return jobs
+
 def get_job_details(job_id):
     conn = get_connection()
     cursor = conn.cursor()

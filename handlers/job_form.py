@@ -40,7 +40,7 @@ async def process_cancel_command_out_ds(message: Message, state: FSMContext):
 async def process_add_job_form(callback: CallbackQuery, state: FSMContext):
     await callback.answer('job_form_settings')
 
-    await callback.message.edit_text('category:', reply_markup=get_categories_keyboard())
+    await callback.message.edit_text('category:', reply_markup=get_categories_keyboard(hr_mod=True))
     await state.set_state(JobForm.waiting_for_job_category)
 
 @router.callback_query(StateFilter(JobForm.waiting_for_job_category))

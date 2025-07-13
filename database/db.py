@@ -55,5 +55,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+'''
 get_connection()
 init_db()
+'''

@@ -7,6 +7,7 @@ from handlers.candidates import router as router_candidates
 from handlers.jobs import router as router_jobs
 from handlers.start import router as router_start
 from handlers.job_form import router as router_job_form
+from handlers.key_word_query_form import router as router_search
 
 from config import Config, load_config
 import logging
@@ -27,6 +28,7 @@ async def main():
     dp.include_router(router_jobs)
     dp.include_router(router_start)
     dp.include_router(router_job_form)
+    dp.include_router(router_search)
 
     await dp.start_polling(bot)
 
