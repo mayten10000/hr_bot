@@ -29,5 +29,5 @@ async def handle_key_word_query(message: Message, state: FSMContext):
         await message.answer('empty_query_error')
         return
 
-    await get_similarity_scores(message, query)
     await state.clear()
+    await get_similarity_scores(message, state, query)

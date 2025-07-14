@@ -8,6 +8,7 @@ from handlers.jobs import router as router_jobs
 from handlers.start import router as router_start
 from handlers.job_form import router as router_job_form
 from handlers.key_word_query_form import router as router_search
+from keyboards.inline import router as router_keyboard
 
 from config import Config, load_config
 import logging
@@ -21,7 +22,7 @@ logging.basicConfig(
 
 async def main():
     bot = Bot(token=config.bot.token)
-    dp = Dispatcher(storage=MemoryStorage())
+    dp = Dispatcher(storage=MemoryStorage()) # Заменить позже на RedisStorage
 
     dp.include_router(router_apply)
     dp.include_router(router_candidates)
@@ -29,6 +30,7 @@ async def main():
     dp.include_router(router_start)
     dp.include_router(router_job_form)
     dp.include_router(router_search)
+    dp.include_router(router_keyboard)
 
     await dp.start_polling(bot)
 
