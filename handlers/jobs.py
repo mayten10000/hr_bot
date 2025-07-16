@@ -54,9 +54,9 @@ async def print_category_jobs(callback: CallbackQuery):
     jobs = get_category_jobs(job_category)
     logging.info(f"category_jobs: {jobs}")
     if jobs:
-        await callback.message.edit_text("jobs_choice", reply_markup=job_keyboard(jobs))
+        await callback.message.edit_text("jobs_choice", reply_markup=job_keyboard(jobs, page=0))
     else:
-        await callback.message.edit_text("no_category_jobs", reply_markup=job_keyboard(jobs))
+        await callback.message.edit_text("no_category_jobs", reply_markup=job_keyboard(jobs, page=0))
 
 @router.callback_query(F.data.startswith("select_"))
 async def print_job(callback: CallbackQuery):

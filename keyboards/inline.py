@@ -37,7 +37,7 @@ def job_keyboard(jobs, page):
     page_jobs = jobs[start:end]
 
     buttons = [
-        [InlineKeyboardButton(text = job[1], callback=f'select_{job[0]}')] for job in page_jobs
+        [InlineKeyboardButton(text = job[1], callback_data=f'select_{job[0]}')] for job in page_jobs
     ]
 
     other_buttons = []
